@@ -13,15 +13,17 @@
 
     <style>
         :root {
-            --bg-dark: #070a0e;
-            --panel-bg: #0c1015;
-            --card-bg: #12171f;
-            --border-color: #1c232d;
-            --border-highlight: #2a3442;
+            --bg-dark: #070913;
+            --panel-bg: rgba(13, 16, 27, 0.75);
+            --card-bg: rgba(18, 22, 38, 0.65);
+            --border-color: rgba(99, 102, 241, 0.15);
+            --border-highlight: rgba(129, 140, 248, 0.35);
             --accent-blue: #388bfd;
-            --accent-cyan: #39bae6;
-            --text-main: #d0d7de;
-            --text-muted: #7d8590;
+            --accent-purple: #818cf8;
+            --accent-cyan: #38bdf8;
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
         }
 
         body {
@@ -33,12 +35,15 @@
             letter-spacing: 0.2px;
             min-height: 100vh;
             
-            /* High-Tech Grid Pattern */
+            /* Ambient Purple-Blue Gradient Overlay + Grid Effect */
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(56, 139, 253, 0.05) 0%, transparent 60%),
-                linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-            background-size: 100% 100%, 28px 28px, 28px 28px;
+                radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
+                radial-gradient(circle at 85% 85%, rgba(56, 189, 248, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.08) 0%, transparent 60%),
+                linear-gradient(to right, rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+            background-attachment: fixed;
         }
 
         .mono {
@@ -46,33 +51,76 @@
             font-weight: 300;
         }
 
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+            50% { box-shadow: 0 0 22px rgba(168, 85, 247, 0.4); }
+            100% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.2); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
         /* Slim Navigation Header */
         .app-header {
-            background-color: rgba(12, 16, 21, 0.9);
+            background-color: rgba(10, 13, 24, 0.85);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border-color);
             padding: 0.55rem 1.25rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Brand Logo Design */
+        .brand-logo-container {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-svg {
+            width: 26px;
+            height: 26px;
+            filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.6));
+            transition: transform 0.3s ease;
+        }
+
+        .brand-logo-container:hover .brand-svg {
+            transform: scale(1.08) rotate(3deg);
         }
 
         /* Sidebar Styling */
         .sidebar {
             background-color: var(--panel-bg);
+            backdrop-filter: blur(12px);
             border-right: 1px solid var(--border-color);
-            min-height: calc(100vh - 50px);
+            min-height: calc(100vh - 52px);
         }
 
         .card-custom {
             background: var(--card-bg);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card-custom:hover {
+            border-color: var(--border-highlight);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.15);
         }
 
         /* Console Output Box */
         .console-log {
-            background-color: #030609;
+            background-color: rgba(4, 6, 14, 0.9);
             border: 1px solid var(--border-color);
-            border-radius: 5px;
+            border-radius: 6px;
             color: var(--accent-cyan);
             font-family: 'JetBrains Mono', monospace;
             font-weight: 300;
@@ -81,25 +129,32 @@
             padding: 0.75rem;
             font-size: 0.75rem;
             line-height: 1.6;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.6);
         }
 
         .metric-badge {
-            background: #0d1218;
+            background: rgba(15, 20, 35, 0.7);
             border: 1px solid var(--border-color);
-            padding: 0.3rem 0.55rem;
-            border-radius: 4px;
+            padding: 0.35rem 0.6rem;
+            border-radius: 5px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.75rem;
             font-weight: 300;
+            transition: all 0.2s ease;
+        }
+
+        .metric-badge:hover {
+            border-color: var(--accent-purple);
+            background: rgba(25, 30, 50, 0.8);
         }
 
         .status-dot {
             height: 7px;
             width: 7px;
-            background-color: #3fb950;
+            background-color: #38bdf8;
             border-radius: 50%;
             display: inline-block;
-            box-shadow: 0 0 10px rgba(63, 185, 80, 0.8);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
         }
 
         .status-dot.active {
@@ -114,50 +169,60 @@
 
         /* Form Controls */
         .form-control, .form-select {
-            background-color: #080c10 !important;
-            border-color: var(--border-highlight) !important;
-            color: #e6edf3 !important;
+            background-color: rgba(8, 11, 20, 0.8) !important;
+            border-color: var(--border-color) !important;
+            color: #f1f5f9 !important;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.8rem;
             font-weight: 300;
-            border-radius: 5px;
+            border-radius: 6px;
+            transition: all 0.25s ease;
         }
 
         .form-control:focus, .form-select:focus {
-            border-color: var(--accent-blue) !important;
-            box-shadow: 0 0 0 1px rgba(56, 139, 253, 0.3);
+            border-color: var(--accent-purple) !important;
+            box-shadow: 0 0 12px rgba(129, 140, 248, 0.3) !important;
         }
 
+        /* Animated Action Button */
         .btn-execute {
-            background: linear-gradient(180deg, #1f7a31 0%, #175f26 100%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             color: #ffffff;
             font-family: 'JetBrains Mono', monospace;
             font-size: 0.82rem;
             font-weight: 400;
             letter-spacing: 0.8px;
-            border-radius: 5px;
-            box-shadow: 0 2px 12px rgba(23, 95, 38, 0.3);
-            transition: all 0.2s ease;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-execute:hover {
-            background: linear-gradient(180deg, #28963e 0%, #1f7a31 100%);
-            box-shadow: 0 0 16px rgba(40, 150, 62, 0.4);
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            box-shadow: 0 0 22px rgba(139, 92, 246, 0.55);
             color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-execute:active {
+            transform: translateY(1px);
         }
 
         /* Custom Visual Severity Meter */
         .meter-bar {
-            height: 4px;
-            background: #1c232d;
-            border-radius: 2px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .meter-fill {
             height: 100%;
             width: 0%;
-            transition: width 0.6s ease;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.4s ease;
         }
 
         /* Enterprise Table Styling */
@@ -170,10 +235,11 @@
             font-weight: 400;
             color: var(--text-muted);
             border-bottom-color: var(--border-color);
-            padding: 0.4rem 0.5rem;
+            padding: 0.45rem 0.5rem;
+            background: rgba(10, 14, 26, 0.5);
         }
         .table-custom td {
-            padding: 0.4rem 0.5rem;
+            padding: 0.45rem 0.5rem;
             border-bottom-color: var(--border-color);
             background: transparent;
         }
@@ -183,7 +249,20 @@
 
     <header class="app-header d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-3">
-            <span class="fw-medium text-white fs-6 mono" style="letter-spacing: -0.5px;"><i class="bi bi-shield-lock text-primary me-1"></i> ZEROTRUST-ONE</span>
+            <div class="brand-logo-container">
+                <svg class="brand-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 2L4 7V15C4 22.38 9.12 29.18 16 31C22.88 29.18 28 22.38 28 15V7L16 2Z" fill="url(#logo-grad)" stroke="#818cf8" stroke-width="1.5"/>
+                    <path d="M16 8L21 13L16 18L11 13L16 8Z" stroke="#38bdf8" stroke-width="1.5" stroke-linejoin="round"/>
+                    <circle cx="16" cy="13" r="2" fill="#38bdf8"/>
+                    <defs>
+                        <linearGradient id="logo-grad" x1="4" y1="2" x2="28" y2="31" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#4f46e5" stop-opacity="0.8"/>
+                            <stop offset="1" stop-color="#0f172a" stop-opacity="0.9"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="fw-medium text-white fs-6 mono" style="letter-spacing: -0.3px;">ZEROTRUST-ONE</span>
+            </div>
             <span class="badge bg-dark border border-secondary text-light mono" style="font-weight: 300;">env: production-render</span>
             <span class="badge bg-dark border border-secondary text-warning mono" style="font-weight: 300;">build: #7f8a91-dev</span>
         </div>
@@ -204,7 +283,7 @@
                 
                 <ul class="list-unstyled mb-4 mono" style="font-size: 0.78rem;">
                     <li class="mb-2"><a href="#" class="text-decoration-none text-light d-flex align-items-center justify-content-between">
-                        <span><i class="bi bi-cpu me-2 text-primary"></i>Inference Node</span> <span class="badge bg-success" style="font-size: 0.55rem; font-weight: 300;">READY</span>
+                        <span><i class="bi bi-cpu me-2" style="color: var(--accent-purple);"></i>Inference Node</span> <span class="badge bg-success" style="font-size: 0.55rem; font-weight: 300;">READY</span>
                     </a></li>
                     <li class="mb-2"><a href="#" class="text-decoration-none text-muted d-flex align-items-center justify-content-between">
                         <span><i class="bi bi-diagram-3 me-2"></i>Consensus Matrix</span> <span class="badge bg-secondary" style="font-size: 0.55rem; font-weight: 300;">2 LLMs</span>
@@ -214,7 +293,7 @@
                     </a></li>
                 </ul>
 
-                <hr class="border-secondary my-3" style="opacity: 0.3;">
+                <hr class="border-secondary my-3" style="opacity: 0.2;">
 
                 <div class="text-uppercase text-secondary mb-2 mono" style="font-size: 0.65rem; letter-spacing: 1.2px;">Model Providers</div>
                 <div class="metric-badge mb-2 d-flex justify-content-between align-items-center">
@@ -226,7 +305,7 @@
                     <i class="bi bi-check-circle text-success"></i>
                 </div>
 
-                <div class="p-2 border border-secondary rounded bg-dark mono" style="font-size: 0.7rem;">
+                <div class="p-2 border border-secondary rounded bg-dark mono" style="font-size: 0.7rem; background: rgba(5, 8, 18, 0.6) !important;">
                     <div class="text-secondary mb-1">TELEMETRY STATS</div>
                     <div class="d-flex justify-content-between mb-1"><span>Throughput:</span> <strong class="text-light" style="font-weight: 400;">12 req/m</strong></div>
                     <div class="d-flex justify-content-between mb-1"><span>Quarantine:</span> <strong class="text-warning" style="font-weight: 400;">18.4%</strong></div>
@@ -234,11 +313,11 @@
                 </div>
             </aside>
 
-            <main class="col-md-9 col-lg-10 p-4">
+            <main class="col-md-9 col-lg-10 p-4 animate-fade">
                 
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="fw-normal text-white mb-0" style="letter-spacing: -0.3px;">Payload Threat Inspector Workbench</h5>
-                    <span class="text-secondary mono" style="font-size: 0.75rem;">Endpoint: <code class="text-info">/api/v1/scan</code></span>
+                    <span class="text-secondary mono" style="font-size: 0.75rem;">Endpoint: <code style="color: var(--accent-cyan);">/api/v1/scan</code></span>
                 </div>
 
                 <div class="row g-3">
@@ -268,7 +347,7 @@
                             </div>
 
                             <button onclick="runScan()" id="scanBtn" class="btn btn-execute w-100 py-2">
-                                <i class="bi bi-terminal me-1"></i> EXECUTE THREAT PARSING
+                                <i class="bi bi-shield-shaded me-1"></i> EXECUTE THREAT PARSING
                             </button>
                         </div>
 
@@ -287,20 +366,20 @@
                     <div class="col-lg-5">
                         <div class="card-custom p-3 h-100 d-flex flex-column justify-content-between">
                             <div>
-                                <div class="border-bottom border-secondary pb-2 mb-3 d-flex justify-content-between align-items-center">
+                                <div class="border-bottom border-secondary pb-2 mb-3 d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
                                     <span class="fw-normal text-white mono" style="font-size: 0.8rem;">CONVERGENCE VERDICT</span>
                                     <span id="verdictStatusBadge" class="badge bg-secondary mono" style="font-weight: 300;">AWAITING SCAN</span>
                                 </div>
 
                                 <div class="row g-2 mb-2">
                                     <div class="col-6">
-                                        <div class="p-2 border border-secondary rounded text-center bg-dark">
+                                        <div class="p-2 border border-secondary rounded text-center" style="background: rgba(5, 8, 18, 0.7); border-color: var(--border-color) !important;">
                                             <div class="text-secondary mono" style="font-size: 0.65rem;">AGGREGATE RISK SCORE</div>
                                             <div id="riskScore" class="fs-4 fw-normal text-light mono mt-1">-- / 100</div>
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="p-2 border border-secondary rounded text-center bg-dark">
+                                        <div class="p-2 border border-secondary rounded text-center" style="background: rgba(5, 8, 18, 0.7); border-color: var(--border-color) !important;">
                                             <div class="text-secondary mono" style="font-size: 0.65rem;">THREAT CATEGORY</div>
                                             <div id="threatLevel" class="fs-6 text-light mt-2 fw-normal">--</div>
                                         </div>
@@ -319,21 +398,21 @@
 
                                 <div class="mb-3">
                                     <label class="text-secondary mb-1 mono" style="font-size: 0.7rem;">RECOMMENDED ENFORCEMENT</label>
-                                    <div id="actionText" class="p-2 border border-secondary rounded bg-dark text-warning mono" style="font-size: 0.78rem;">
+                                    <div id="actionText" class="p-2 border border-secondary rounded text-warning mono" style="font-size: 0.78rem; background: rgba(5, 8, 18, 0.7); border-color: var(--border-color) !important;">
                                         No action evaluated.
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
                                     <label class="text-secondary mb-1 mono" style="font-size: 0.7rem;">CONSENSUS ANALYST EXPLANATION</label>
-                                    <div id="explanationText" class="p-2 border border-secondary rounded bg-dark text-light mono" style="font-size: 0.75rem; min-height: 70px; line-height: 1.5;">
+                                    <div id="explanationText" class="p-2 border border-secondary rounded text-light mono" style="font-size: 0.75rem; min-height: 70px; line-height: 1.5; background: rgba(5, 8, 18, 0.7); border-color: var(--border-color) !important;">
                                         Waiting for execution payload to compute heuristic vector...
                                     </div>
                                 </div>
 
                                 <div>
                                     <label class="text-secondary mb-1 mono" style="font-size: 0.7rem;">MODEL CONSENSUS BREAKDOWN</label>
-                                    <table class="table table-dark table-custom border border-secondary rounded mono mb-0">
+                                    <table class="table table-dark table-custom border border-secondary rounded mono mb-0" style="border-color: var(--border-color) !important;">
                                         <thead>
                                             <tr>
                                                 <th>ENGINE</th>
@@ -358,9 +437,9 @@
 
                             </div>
 
-                            <div class="pt-2 mt-2 border-top border-secondary text-secondary mono d-flex justify-content-between align-items-center" style="font-size: 0.68rem;">
+                            <div class="pt-2 mt-2 border-top border-secondary text-secondary mono d-flex justify-content-between align-items-center" style="font-size: 0.68rem; border-color: var(--border-color) !important;">
                                 <span>Validation Model: <span class="text-light">LLM Consensus Matrix v3.0</span></span>
-                                <span>Status: <span class="text-success">Nominal</span></span>
+                                <span>Status: <span style="color: var(--accent-purple);">Nominal</span></span>
                             </div>
                         </div>
                     </div>
@@ -433,11 +512,11 @@
                 } else if (analysis.risk_score >= 50) {
                     badge.className = "badge bg-warning text-dark mono";
                     badge.innerText = "HIGH RISK";
-                    fill.style.backgroundColor = "#d29922";
+                    fill.style.backgroundColor = "#fbbf24";
                 } else {
                     badge.className = "badge bg-success mono";
                     badge.innerText = "LOW / SAFE";
-                    fill.style.backgroundColor = "#2ea043";
+                    fill.style.backgroundColor = "#34d399";
                 }
 
                 // Update Model Breakdown Table
@@ -446,12 +525,12 @@
                     <tr>
                         <td>Groq Node</td>
                         <td class="text-light">Llama-3.3-70b</td>
-                        <td class="text-end text-info">${analysis.risk_score} / 100</td>
+                        <td class="text-end" style="color: var(--accent-purple);">${analysis.risk_score} / 100</td>
                     </tr>
                     <tr>
                         <td>Gemini Node</td>
                         <td class="text-light">Gemini-Flash</td>
-                        <td class="text-end text-info">${analysis.risk_score} / 100</td>
+                        <td class="text-end" style="color: var(--accent-purple);">${analysis.risk_score} / 100</td>
                     </tr>
                 `;
 
@@ -459,7 +538,7 @@
                 logToConsole(`<span class='text-danger'>[ENGINE_FAIL] Request error: ${err.message}</span>`);
             } finally {
                 scanBtn.disabled = false;
-                scanBtn.innerHTML = `<i class="bi bi-terminal me-1"></i> EXECUTE THREAT PARSING`;
+                scanBtn.innerHTML = `<i class="bi bi-shield-shaded me-1"></i> EXECUTE THREAT PARSING`;
             }
         }
     </script>
