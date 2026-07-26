@@ -1,6 +1,7 @@
 import asyncio
 import json
 import httpx
+import re
 from app.core.config import settings
 
 SYSTEM_PROMPT = """You are an enterprise cybersecurity analyst engine for ZeroTrust One.
@@ -12,6 +13,7 @@ Respond ONLY in JSON with two keys:
 
 async def call_groq(content: str) -> dict:
     if not settings.GROQ_API_KEY:
+        print("[GROQ] Skipped: GROQ_API_KEY is missing.")
         return {"model": "Groq", "risk_score": None}
     
     url = "https://api.groq.com/openai/v1/chat/completions"
@@ -40,15 +42,19 @@ async def call_groq(content: str) -> dict:
                     "risk_score": int(parsed.get("risk_score", 0)),
                     "reasoning": parsed.get("reasoning", "")
                 }
-    except Exception:
-        pass
+            else:
+                print(f"[GROQ Error] HTTP {res.status_code}: {res.text}")
+    except Exception as e:
+        print(f"[GROQ Exception] {str(e)}")
+        
     return {"model": "Groq", "risk_score": None}
 
 async def call_gemini(content: str) -> dict:
     if not settings.GEMINI_API_KEY:
+        print("[GEMINI] Skipped: GEMINI_API_KEY is missing.")
         return {"model": "Gemini", "risk_score": None}
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     payload = {
         "contents": [{
             "parts": [{"text": f"{SYSTEM_PROMPT}\n\nAnalyze payload: {content}"}]
@@ -68,9 +74,43 @@ async def call_gemini(content: str) -> dict:
                     "risk_score": int(parsed.get("risk_score", 0)),
                     "reasoning": parsed.get("reasoning", "")
                 }
-    except Exception:
-        pass
+            else:
+                print(f"[GEMINI Error] HTTP {res.status_code}: {res.text}")
+    except Exception as e:
+        print(f"[GEMINI Exception] {str(e)}")
+        
     return {"model": "Gemini", "risk_score": None}
+
+def run_heuristic_analysis(content: str) -> dict:
+    """Fallback rule-based scanner if cloud LLMs are unreachable."""
+    score = 15
+    reasons = []
+    
+    lowered = content.lower()
+    
+    # Check suspicious keywords
+    suspicious_terms = ["urgent", "locked", "suspended", "verify your account", "click here", "confirm details", "password reset"]
+    found_terms = [term for term in suspicious_terms if term in lowered]
+    
+    if found_terms:
+        score += 45
+        reasons.append(f"High-risk social engineering phrasing detected ({', '.join(found_terms)}).")
+        
+    # Check suspicious domain / link patterns
+    if re.search(r'https?://[^\s]+', content):
+        score += 30
+        reasons.append("Unverified external hyper-link detected in payload.")
+        
+    if "0" in lowered or "-" in lowered or "security" in lowered or "update" in lowered:
+        score += 10
+        
+    final_score = min(score, 95)
+    explanation = " ".join(reasons) if reasons else "Rule-based inspection completed. No immediate threats identified."
+    
+    return {
+        "risk_score": final_score,
+        "reasoning": explanation
+    }
 
 async def run_unified_scanner(content: str, scan_type: str) -> dict:
     results = await asyncio.gather(
@@ -89,8 +129,10 @@ async def run_unified_scanner(content: str, scan_type: str) -> dict:
                 reasons.append(r["reasoning"])
     
     if not valid_scores:
-        avg_score = 15.0
-        explanation = f"Zero Trust baseline assessment completed for input type [{scan_type}]. No immediate malicious signatures detected."
+        print("[Engine] Fallback triggered: Using Rule-Based Heuristic Inspection.")
+        heuristic = run_heuristic_analysis(content)
+        avg_score = heuristic["risk_score"]
+        explanation = f"[Heuristic Engine] {heuristic['reasoning']}"
     else:
         avg_score = round(sum(valid_scores) / len(valid_scores), 1)
         explanation = " ".join(reasons) if reasons else "Multi-layer LLM consensus validation finalized."
