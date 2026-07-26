@@ -15,9 +15,12 @@ async def call_groq(content: str) -> dict:
         return {"model": "Groq", "risk_score": None}
     
     url = "https://api.groq.com/openai/v1/chat/completions"
-    headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"}
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
     payload = {
-        "model": "llama-3.1-70b-versatile",
+        "model": "llama-3.3-70b-versatile",
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": f"Analyze payload: {content}"}
@@ -32,7 +35,11 @@ async def call_groq(content: str) -> dict:
             if res.status_code == 200:
                 data = res.json()
                 parsed = json.loads(data['choices'][0]['message']['content'])
-                return {"model": "Groq", "risk_score": int(parsed.get("risk_score", 0)), "reasoning": parsed.get("reasoning", "")}
+                return {
+                    "model": "Groq",
+                    "risk_score": int(parsed.get("risk_score", 0)),
+                    "reasoning": parsed.get("reasoning", "")
+                }
     except Exception:
         pass
     return {"model": "Groq", "risk_score": None}
@@ -41,7 +48,7 @@ async def call_gemini(content: str) -> dict:
     if not settings.GEMINI_API_KEY:
         return {"model": "Gemini", "risk_score": None}
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     payload = {
         "contents": [{
             "parts": [{"text": f"{SYSTEM_PROMPT}\n\nAnalyze payload: {content}"}]
@@ -56,7 +63,11 @@ async def call_gemini(content: str) -> dict:
                 data = res.json()
                 text = data['candidates'][0]['content']['parts'][0]['text']
                 parsed = json.loads(text)
-                return {"model": "Gemini", "risk_score": int(parsed.get("risk_score", 0)), "reasoning": parsed.get("reasoning", "")}
+                return {
+                    "model": "Gemini",
+                    "risk_score": int(parsed.get("risk_score", 0)),
+                    "reasoning": parsed.get("reasoning", "")
+                }
     except Exception:
         pass
     return {"model": "Gemini", "risk_score": None}
