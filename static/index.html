@@ -36,7 +36,6 @@
             min-height: 100vh;
             overflow-x: hidden;
             
-            /* Radiant Animated Mesh Overlay */
             background-image: 
                 radial-gradient(circle at 10% 20%, rgba(168, 85, 247, 0.25) 0%, transparent 40%),
                 radial-gradient(circle at 90% 80%, rgba(59, 130, 246, 0.25) 0%, transparent 45%),
@@ -47,7 +46,6 @@
             background-attachment: fixed;
         }
 
-        /* Animated Interactive Canvas */
         #bgCanvas {
             position: fixed;
             top: 0;
@@ -72,7 +70,6 @@
             box-shadow: 0 4px 30px rgba(126, 34, 206, 0.25);
         }
 
-        /* Brand Logo Design */
         .brand-logo-container {
             display: inline-flex;
             align-items: center;
@@ -90,7 +87,6 @@
             transform: scale(1.1) rotate(5deg);
         }
 
-        /* Sidebar Styling */
         .sidebar {
             background-color: var(--panel-bg);
             backdrop-filter: blur(16px);
@@ -115,7 +111,30 @@
             transform: translateY(-2px);
         }
 
-        /* Console Output Box */
+        /* Drag & Drop File Upload Box */
+        .file-drop-zone {
+            background-color: rgba(10, 8, 25, 0.85);
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .file-drop-zone:hover, .file-drop-zone.dragover {
+            border-color: var(--accent-neon-purple);
+            background-color: rgba(25, 18, 55, 0.9);
+            box-shadow: 0 0 20px rgba(192, 132, 252, 0.3);
+        }
+
+        .file-drop-icon {
+            font-size: 2rem;
+            color: var(--accent-neon-purple);
+            margin-bottom: 0.5rem;
+        }
+
         .console-log {
             background-color: rgba(5, 4, 15, 0.95);
             border: 1px solid var(--border-color);
@@ -163,7 +182,6 @@
             50% { opacity: 0.4; transform: scale(0.85); box-shadow: 0 0 4px var(--accent-cyan); }
         }
 
-        /* Input Controls */
         .form-control, .form-select {
             background-color: rgba(10, 8, 25, 0.85) !important;
             border-color: var(--border-color) !important;
@@ -180,7 +198,6 @@
             box-shadow: 0 0 15px rgba(192, 132, 252, 0.4) !important;
         }
 
-        /* Vibrant Animated Execute Button */
         .btn-execute {
             background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 100%);
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -201,7 +218,6 @@
             transform: translateY(-1px);
         }
 
-        /* Severity Meter */
         .meter-bar {
             height: 6px;
             background: rgba(255, 255, 255, 0.08);
@@ -258,7 +274,7 @@
         </div>
         <div class="d-flex align-items-center gap-3 text-secondary mono" style="font-size: 0.75rem;">
             <div><span class="status-dot me-1"></span> Core Pipeline: <strong class="text-light" style="font-weight: 400;">ONLINE</strong></div>
-            <div>Latency: <strong style="color: var(--accent-cyan);" id="latencyVal" style="font-weight: 400;">--</strong></div>
+            <div>Latency: <strong style="color: var(--accent-cyan);" id="latencyVal">--</strong></div>
         </div>
     </header>
 
@@ -307,10 +323,13 @@
                             <div class="row g-2 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label text-secondary mb-1 mono" style="font-size: 0.72rem;">TARGET PAYLOAD TYPE</label>
-                                    <select id="scanType" class="form-select">
+                                    <select id="scanType" class="form-select" onchange="toggleScanInputMode()">
                                         <option value="email">RAW_EMAIL_HEADERS_AND_BODY</option>
                                         <option value="url">HTTP_URL_STRING</option>
                                         <option value="text">UNSTRUCTURED_TEXT_PAYLOAD</option>
+                                        <option value="qr">QR_CODE_IMAGE_SCAN</option>
+                                        <option value="pdf">PDF_DOCUMENT_PAYLOAD</option>
+                                        <option value="file">BINARY_FILE_ARTIFACT</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
@@ -321,9 +340,23 @@
                                 </div>
                             </div>
 
-                            <div class="mb-3">
+                            <div class="mb-3" id="textInputContainer">
                                 <label class="form-label text-secondary mb-1 mono" style="font-size: 0.72rem;">RAW INSPECTION BUFFER</label>
                                 <textarea id="scanInput" class="form-control" rows="6" placeholder="Paste raw packet, string, header, or message buffer here..."></textarea>
+                            </div>
+
+                            <div class="mb-3 d-none" id="fileInputContainer">
+                                <label class="form-label text-secondary mb-1 mono" style="font-size: 0.72rem;">FILE / IMAGE ARTIFACT UPLOAD</label>
+                                <div class="file-drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                                    <i class="bi bi-qr-code-scan file-drop-icon" id="dropIcon"></i>
+                                    <div class="mono text-light" style="font-size: 0.8rem;" id="dropLabel">Drag & Drop file or click to select</div>
+                                    <div class="mono text-muted mt-1" style="font-size: 0.68rem;" id="dropHint">Supported: PNG, JPG, PDF, ZIP, EXE, DLL (Max 25MB)</div>
+                                    <input type="file" id="fileInput" class="d-none" onchange="handleFileSelected(event)">
+                                </div>
+                                <div id="selectedFileInfo" class="mt-2 mono text-info d-none" style="font-size: 0.75rem;">
+                                    <i class="bi bi-file-earmark-check me-1"></i> <span id="fileName">file.pdf</span> 
+                                    <button class="btn btn-link text-danger p-0 ms-2 text-decoration-none" style="font-size: 0.75rem;" onclick="clearSelectedFile()"><i class="bi bi-x-circle"></i> Remove</button>
+                                </div>
                             </div>
 
                             <button onclick="runScan()" id="scanBtn" class="btn btn-execute w-100 py-2">
@@ -494,6 +527,73 @@
         }
         animateParticles();
 
+        /* File Upload UI Logic */
+        let loadedFile = null;
+
+        function toggleScanInputMode() {
+            const scanType = document.getElementById("scanType").value;
+            const textContainer = document.getElementById("textInputContainer");
+            const fileContainer = document.getElementById("fileInputContainer");
+            const dropIcon = document.getElementById("dropIcon");
+            const dropLabel = document.getElementById("dropLabel");
+            const dropHint = document.getElementById("dropHint");
+
+            if (["qr", "pdf", "file"].includes(scanType)) {
+                textContainer.classList.add("d-none");
+                fileContainer.classList.remove("d-none");
+
+                if (scanType === "qr") {
+                    dropIcon.className = "bi bi-qr-code-scan file-drop-icon";
+                    dropLabel.innerText = "Upload QR Code Image";
+                    dropHint.innerText = "Supported formats: PNG, JPG, WEBP, GIF";
+                } else if (scanType === "pdf") {
+                    dropIcon.className = "bi bi-file-earmark-pdf file-drop-icon";
+                    dropLabel.innerText = "Upload PDF Document for Threat Parsing";
+                    dropHint.innerText = "Supported formats: PDF (Max 25MB)";
+                } else {
+                    dropIcon.className = "bi bi-file-earmark-binary file-drop-icon";
+                    dropLabel.innerText = "Upload Binary / Executable / Archive";
+                    dropHint.innerText = "Supported formats: EXE, DLL, ZIP, TAR, ELF, BIN";
+                }
+            } else {
+                textContainer.classList.remove("d-none");
+                fileContainer.classList.add("d-none");
+            }
+        }
+
+        function handleFileSelected(e) {
+            const file = e.target.files[0];
+            if (file) {
+                loadedFile = file;
+                document.getElementById("fileName").innerText = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                document.getElementById("selectedFileInfo").classList.remove("d-none");
+                logToConsole(`[FILE_LOADED] Loaded '${file.name}' into inspection memory buffer.`);
+            }
+        }
+
+        function clearSelectedFile() {
+            loadedFile = null;
+            document.getElementById("fileInput").value = "";
+            document.getElementById("selectedFileInfo").classList.add("d-none");
+            logToConsole(`[FILE_REMOVED] File artifact buffer cleared.`);
+        }
+
+        /* Drag & Drop Handlers */
+        const dropZone = document.getElementById("dropZone");
+        ['dragenter', 'dragover'].forEach(name => {
+            dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }, false);
+        });
+        ['dragleave', 'drop'].forEach(name => {
+            dropZone.addEventListener(name, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); }, false);
+        });
+        dropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                handleFileSelected({ target: { files: files } });
+            }
+        });
+
         function logToConsole(msg) {
             const consoleBox = document.getElementById("consoleLog");
             const time = new Date().toISOString().substring(11, 19);
@@ -503,27 +603,50 @@
 
         async function runScan() {
             const scanType = document.getElementById("scanType").value;
-            const content = document.getElementById("scanInput").value.trim();
             const scanBtn = document.getElementById("scanBtn");
+            let payloadData = "";
 
-            if (!content) {
-                logToConsole("<span class='text-danger'>[ERROR] Cannot execute scan on empty buffer.</span>");
-                return;
+            if (["qr", "pdf", "file"].includes(scanType)) {
+                if (!loadedFile) {
+                    logToConsole("<span class='text-danger'>[ERROR] File payload required. Please upload a file.</span>");
+                    return;
+                }
+                payloadData = `[FILE_ARTIFACT: ${loadedFile.name}, SIZE: ${loadedFile.size} bytes]`;
+            } else {
+                payloadData = document.getElementById("scanInput").value.trim();
+                if (!payloadData) {
+                    logToConsole("<span class='text-danger'>[ERROR] Cannot execute scan on empty buffer.</span>");
+                    return;
+                }
             }
 
             scanBtn.disabled = true;
             scanBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> DISPATCHING TO LLMs...`;
             
-            logToConsole(`[SCAN_START] Dispatching payload (Length: ${content.length} chars) to multi-model pipeline...`);
+            logToConsole(`[SCAN_START] Dispatching payload (${scanType.toUpperCase()}) to multi-model pipeline...`);
             logToConsole(`[LLM_DISPATCH] Parallel HTTP POST -> Groq (llama-3.3) & Gemini (flash)`);
 
             const startTime = performance.now();
 
             try {
+                // If using multipart/form-data for actual file uploading in backend:
+                let body;
+                let headers = {};
+
+                if (["qr", "pdf", "file"].includes(scanType)) {
+                    const formData = new FormData();
+                    formData.append("scan_type", scanType);
+                    formData.append("file", loadedFile);
+                    body = formData;
+                } else {
+                    headers["Content-Type"] = "application/json";
+                    body = JSON.stringify({ scan_type: scanType, content: payloadData });
+                }
+
                 const response = await fetch("/api/v1/scan", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ scan_type: scanType, content: content })
+                    headers: headers,
+                    body: body
                 });
 
                 const endTime = performance.now();
@@ -541,7 +664,6 @@
                 document.getElementById("actionText").innerText = analysis.recommended_action;
                 document.getElementById("explanationText").innerText = analysis.explanation;
 
-                // Update Severity Spectrum Meter
                 const fill = document.getElementById("meterFill");
                 const percentText = document.getElementById("meterPercent");
                 percentText.innerText = analysis.risk_score + "%";
@@ -562,7 +684,6 @@
                     fill.style.backgroundColor = "#10b981";
                 }
 
-                // Dynamic Model Table Update
                 const tableBody = document.getElementById("modelTableBody");
                 tableBody.innerHTML = `
                     <tr>
