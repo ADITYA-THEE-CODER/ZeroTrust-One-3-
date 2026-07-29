@@ -140,28 +140,6 @@
             margin-bottom: 0.5rem;
         }
 
-        /* Context Box Styling */
-        .scanner-context-box {
-            background-color: rgba(12, 10, 32, 0.8);
-            border: 1px solid var(--border-color);
-            border-left: 3px solid var(--accent-cyan);
-            border-radius: 6px;
-            padding: 0.65rem 0.85rem;
-            margin-bottom: 1rem;
-            font-size: 0.74rem;
-            line-height: 1.45;
-            transition: all 0.3s ease;
-        }
-
-        .scanner-context-box .context-title {
-            color: var(--accent-cyan);
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
-        }
-
         .console-log {
             background-color: rgba(5, 4, 15, 0.95);
             border: 1px solid var(--border-color);
@@ -367,15 +345,6 @@
                                 </div>
                             </div>
 
-                            <div id="scannerContextBox" class="scanner-context-box mono">
-                                <div class="context-title" id="contextTitle">
-                                    <i class="bi bi-info-circle-fill"></i> RAW_EMAIL_HEADERS_AND_BODY
-                                </div>
-                                <div id="contextDescription" class="text-light opacity-75">
-                                    Parses raw email structures, inspecting SPF/DKIM authentication records, header anomalies, reply-to mismatches, and embedded malicious links or spear-phishing syntax.
-                                </div>
-                            </div>
-
                             <div class="mb-3" id="textInputContainer">
                                 <label class="form-label text-secondary mb-1 mono" style="font-size: 0.72rem;">RAW INSPECTION BUFFER</label>
                                 <textarea id="scanInput" class="form-control" rows="6" placeholder="Paste raw packet, string, header, or message buffer here..."></textarea>
@@ -563,34 +532,6 @@
         }
         animateParticles();
 
-        /* Scanner Context Definitions */
-        const scannerContexts = {
-            email: {
-                title: "RAW_EMAIL_HEADERS_AND_BODY",
-                description: "Parses raw email structures, inspecting SPF/DKIM authentication records, header anomalies, reply-to mismatches, and embedded malicious links or spear-phishing syntax."
-            },
-            url: {
-                title: "HTTP_URL_STRING",
-                description: "Evaluates Web URIs for typosquatting, IDN homograph attacks, suspicious query parameters, multi-stage redirect chains, and known domain risk scores."
-            },
-            text: {
-                title: "UNSTRUCTURED_TEXT_PAYLOAD",
-                description: "Analyzes free-form textual buffers for social engineering indicators, credential harvesting prompts, sensitive data leakage (PII), and prompt injection attacks."
-            },
-            qr: {
-                title: "QR_CODE_IMAGE_SCAN",
-                description: "Decodes 2D barcode matrices to reveal embedded payload destinations, protecting against quishing (QR phishing) and obfuscated redirect exploits."
-            },
-            pdf: {
-                title: "PDF_DOCUMENT_PAYLOAD",
-                description: "Extracts text layers and structural object graphs from PDF files to scan for malicious JavaScript streams, embedded executable objects, and phishing attachments."
-            },
-            file: {
-                title: "BINARY_FILE_ARTIFACT",
-                description: "Performs static telemetry extraction on binary artifacts, analyzing entropy, header signatures, structural section flags, and malicious file markers."
-            }
-        };
-
         /* File Upload UI & Logic */
         let loadedFile = null;
 
@@ -601,13 +542,6 @@
             const dropIcon = document.getElementById("dropIcon");
             const dropLabel = document.getElementById("dropLabel");
             const dropHint = document.getElementById("dropHint");
-
-            // Update Context Box
-            const context = scannerContexts[scanType];
-            if (context) {
-                document.getElementById("contextTitle").innerHTML = `<i class="bi bi-info-circle-fill"></i> ${context.title}`;
-                document.getElementById("contextDescription").innerText = context.description;
-            }
 
             if (["qr", "pdf", "file"].includes(scanType)) {
                 textContainer.classList.add("d-none");
@@ -704,22 +638,94 @@
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    if (code) {
-                        logToConsole(`[QR_PARSER] QR code detected successfully.`);
-                        resolve(code.data);
+                    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (qrCode) {
+                        logToConsole(`<span class='text-success'>[QR_PARSER] Decoded string: "${qrCode.data}"</span>`);
+                        resolve(qrCode.data);
                     } else {
-                        reject(new Error("No valid QR code detected in the uploaded image."));
+                        reject(new Error("No readable QR code found in uploaded image."));
                     }
                 };
-                img.onerror = () => reject(new Error("Failed to load image file."));
+                img.onerror = () => reject(new Error("Failed to process image file."));
                 img.src = URL.createObjectURL(file);
             });
         }
 
-        function runScan() {
+        /* Threat Scanner Execution Handler */
+        async function runScan() {
             const scanType = document.getElementById("scanType").value;
-            logToConsole(`[EXECUTE] Initiating scan sequence for scanner profile: ${scanType.toUpperCase()}`);
+            const scanBtn = document.getElementById("scanBtn");
+            let payloadData = "";
+
+            try {
+                // Client-side extraction logic
+                if (scanType === "pdf") {
+                    if (!loadedFile) throw new Error("File payload required. Please upload a PDF.");
+                    payloadData = await extractPdfText(loadedFile);
+                    if (!payloadData.trim()) throw new Error("PDF contains no readable text content.");
+                } else if (scanType === "qr") {
+                    if (!loadedFile) throw new Error("Image required. Please upload a QR image.");
+                    payloadData = await extractQrData(loadedFile);
+                } else if (scanType === "file") {
+                    if (!loadedFile) throw new Error("File payload required. Please upload a binary file.");
+                    payloadData = `[FILE_ARTIFACT: ${loadedFile.name}, SIZE: ${loadedFile.size} bytes]`;
+                } else {
+                    payloadData = document.getElementById("scanInput").value.trim();
+                    if (!payloadData) throw new Error("Cannot execute scan on an empty buffer.");
+                }
+
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> PARSING THREAT MATRIX...`;
+                
+                logToConsole(`[SCAN_START] Dispatching extracted text (${scanType.toUpperCase()}) to backend...`);
+
+                const startTime = performance.now();
+
+                // Send parsed content to API backend
+                const response = await fetch("/api/v1/scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ scan_type: scanType, content: payloadData })
+                });
+
+                const endTime = performance.now();
+                document.getElementById("latencyVal").innerText = Math.round(endTime - startTime) + "ms";
+
+                if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
+
+                const data = await response.json();
+                const analysis = data.analysis;
+
+                logToConsole(`<span class='text-success'>[HTTP_200] Analysis completed successfully.</span>`);
+
+                // Update UI Results
+                document.getElementById("riskScore").innerText = analysis.risk_score + " / 100";
+                document.getElementById("threatLevel").innerText = analysis.threat_level;
+                document.getElementById("actionText").innerText = analysis.recommended_action;
+                document.getElementById("explanationText").innerText = analysis.explanation;
+
+                const fill = document.getElementById("meterFill");
+                document.getElementById("meterPercent").innerText = analysis.risk_score + "%";
+                fill.style.width = analysis.risk_score + "%";
+
+                const badge = document.getElementById("verdictStatusBadge");
+                if (analysis.risk_score >= 80) {
+                    badge.className = "badge bg-danger mono"; badge.innerText = "CRITICAL RISK";
+                    fill.style.backgroundColor = "#ef4444";
+                } else if (analysis.risk_score >= 50) {
+                    badge.className = "badge bg-warning text-dark mono"; badge.innerText = "HIGH RISK";
+                    fill.style.backgroundColor = "#f59e0b";
+                } else {
+                    badge.className = "badge bg-success mono"; badge.innerText = "LOW / SAFE";
+                    fill.style.backgroundColor = "#10b981";
+                }
+
+            } catch (err) {
+                logToConsole(`<span class='text-danger'>[ERROR] ${err.message}</span>`);
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = `<i class="bi bi-shield-shaded me-1"></i> EXECUTE THREAT PARSING`;
+            }
         }
     </script>
 </body>
