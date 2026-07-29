@@ -9,7 +9,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
@@ -440,14 +440,14 @@
                                         </thead>
                                         <tbody id="modelTableBody">
                                             <tr>
-                                                <td class="text-secondary">Groq Node</td>
-                                                <td class="fw-bold text-white" id="groqModelName">Llama-3.3-70b</td>
-                                                <td class="text-end fw-bold text-white" id="groqScore">0 / 100</td>
+                                                <td>Groq Node</td>
+                                                <td class="text-muted">Llama-3.3-70b</td>
+                                                <td class="text-end text-muted">--</td>
                                             </tr>
                                             <tr>
-                                                <td class="text-secondary">Gemini Node</td>
-                                                <td class="fw-bold text-white" id="geminiModelName">Gemini-Flash</td>
-                                                <td class="text-end fw-bold text-white" id="geminiScore">0 / 100</td>
+                                                <td>Gemini Node</td>
+                                                <td class="text-muted">Gemini-Flash</td>
+                                                <td class="text-end text-muted">--</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -638,55 +638,94 @@
                     canvas.height = img.height;
                     ctx.drawImage(img, 0, 0);
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    if (code) {
-                        logToConsole(`[QR_PARSER] QR Code detected and decoded.`);
-                        resolve(code.data);
+                    const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+                    if (qrCode) {
+                        logToConsole(`<span class='text-success'>[QR_PARSER] Decoded string: "${qrCode.data}"</span>`);
+                        resolve(qrCode.data);
                     } else {
-                        logToConsole(`[QR_PARSER_WARN] No QR pattern found in image.`);
-                        resolve("[NO_QR_FOUND]");
+                        reject(new Error("No readable QR code found in uploaded image."));
                     }
                 };
-                img.onerror = () => reject("Failed to load image");
+                img.onerror = () => reject(new Error("Failed to process image file."));
                 img.src = URL.createObjectURL(file);
             });
         }
 
-        /* Run Scan Function */
+        /* Threat Scanner Execution Handler */
         async function runScan() {
-            const btn = document.getElementById("scanBtn");
-            btn.disabled = true;
-            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span> PARSING PAYLOAD...`;
-            logToConsole(`[SCAN_INITIATED] Dispatched payload to execution pipeline.`);
+            const scanType = document.getElementById("scanType").value;
+            const scanBtn = document.getElementById("scanBtn");
+            let payloadData = "";
 
-            // Simulated analysis delay
-            setTimeout(() => {
-                const groqRisk = 0;
-                const geminiRisk = 0;
-                const aggregateRisk = 0;
+            try {
+                // Client-side extraction logic
+                if (scanType === "pdf") {
+                    if (!loadedFile) throw new Error("File payload required. Please upload a PDF.");
+                    payloadData = await extractPdfText(loadedFile);
+                    if (!payloadData.trim()) throw new Error("PDF contains no readable text content.");
+                } else if (scanType === "qr") {
+                    if (!loadedFile) throw new Error("Image required. Please upload a QR image.");
+                    payloadData = await extractQrData(loadedFile);
+                } else if (scanType === "file") {
+                    if (!loadedFile) throw new Error("File payload required. Please upload a binary file.");
+                    payloadData = `[FILE_ARTIFACT: ${loadedFile.name}, SIZE: ${loadedFile.size} bytes]`;
+                } else {
+                    payloadData = document.getElementById("scanInput").value.trim();
+                    if (!payloadData) throw new Error("Cannot execute scan on an empty buffer.");
+                }
 
-                // Update Overview
-                document.getElementById("verdictStatusBadge").className = "badge bg-success mono";
-                document.getElementById("verdictStatusBadge").innerText = "LOW / SAFE";
-                document.getElementById("riskScore").innerText = `${aggregateRisk} / 100`;
-                document.getElementById("threatLevel").innerText = "Safe";
-                document.getElementById("meterPercent").innerText = `${aggregateRisk}%`;
-                document.getElementById("meterFill").style.width = `${aggregateRisk}%`;
-                document.getElementById("meterFill").style.backgroundColor = "var(--accent-cyan)";
-                document.getElementById("actionText").innerText = "No Threat Detected";
-                document.getElementById("explanationText").innerText = "The input payload does not contain any recognizable threat indicators.";
+                scanBtn.disabled = true;
+                scanBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> PARSING THREAT MATRIX...`;
+                
+                logToConsole(`[SCAN_START] Dispatching extracted text (${scanType.toUpperCase()}) to backend...`);
 
-                // Update Table Models and Individual Scores
-                document.getElementById("groqModelName").innerText = "Llama-3.3-70b";
-                document.getElementById("groqScore").innerText = `${groqRisk} / 100`;
+                const startTime = performance.now();
 
-                document.getElementById("geminiModelName").innerText = "Gemini-Flash";
-                document.getElementById("geminiScore").innerText = `${geminiRisk} / 100`;
+                // Send parsed content to API backend
+                const response = await fetch("/api/v1/scan", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ scan_type: scanType, content: payloadData })
+                });
 
-                logToConsole(`[SCAN_COMPLETE] Groq Score: ${groqRisk}/100 | Gemini Score: ${geminiRisk}/100.`);
-                btn.disabled = false;
-                btn.innerHTML = `<i class="bi bi-shield-shaded me-1"></i> EXECUTE THREAT PARSING`;
-            }, 1000);
+                const endTime = performance.now();
+                document.getElementById("latencyVal").innerText = Math.round(endTime - startTime) + "ms";
+
+                if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
+
+                const data = await response.json();
+                const analysis = data.analysis;
+
+                logToConsole(`<span class='text-success'>[HTTP_200] Analysis completed successfully.</span>`);
+
+                // Update UI Results
+                document.getElementById("riskScore").innerText = analysis.risk_score + " / 100";
+                document.getElementById("threatLevel").innerText = analysis.threat_level;
+                document.getElementById("actionText").innerText = analysis.recommended_action;
+                document.getElementById("explanationText").innerText = analysis.explanation;
+
+                const fill = document.getElementById("meterFill");
+                document.getElementById("meterPercent").innerText = analysis.risk_score + "%";
+                fill.style.width = analysis.risk_score + "%";
+
+                const badge = document.getElementById("verdictStatusBadge");
+                if (analysis.risk_score >= 80) {
+                    badge.className = "badge bg-danger mono"; badge.innerText = "CRITICAL RISK";
+                    fill.style.backgroundColor = "#ef4444";
+                } else if (analysis.risk_score >= 50) {
+                    badge.className = "badge bg-warning text-dark mono"; badge.innerText = "HIGH RISK";
+                    fill.style.backgroundColor = "#f59e0b";
+                } else {
+                    badge.className = "badge bg-success mono"; badge.innerText = "LOW / SAFE";
+                    fill.style.backgroundColor = "#10b981";
+                }
+
+            } catch (err) {
+                logToConsole(`<span class='text-danger'>[ERROR] ${err.message}</span>`);
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = `<i class="bi bi-shield-shaded me-1"></i> EXECUTE THREAT PARSING`;
+            }
         }
     </script>
 </body>
