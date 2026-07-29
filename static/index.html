@@ -364,6 +364,13 @@
                                 </div>
                             </div>
 
+                            <div class="mb-3">
+                                <label class="form-label text-secondary mb-1 mono" style="font-size: 0.72rem;">
+                                    <i class="bi bi-info-circle me-1" style="color: var(--accent-cyan);"></i>FILE CONTEXT & ORIGIN (OPTIONAL)
+                                </label>
+                                <textarea id="fileContextInput" class="form-control" rows="2" placeholder="e.g., Received via suspicious phishing email from 'hr@external-domain.com', downloaded from an untrusted forum, found in Slack..."></textarea>
+                            </div>
+
                             <button onclick="runScan()" id="scanBtn" class="btn btn-execute w-100 py-2">
                                 <i class="bi bi-shield-shaded me-1"></i> EXECUTE THREAT PARSING
                             </button>
@@ -655,6 +662,7 @@
         async function runScan() {
             const scanType = document.getElementById("scanType").value;
             const scanBtn = document.getElementById("scanBtn");
+            const fileContext = document.getElementById("fileContextInput").value.trim();
             let payloadData = "";
 
             try {
@@ -681,11 +689,15 @@
 
                 const startTime = performance.now();
 
-                // Send parsed content to API backend
+                // Send parsed content + context to API backend
                 const response = await fetch("/api/v1/scan", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ scan_type: scanType, content: payloadData })
+                    body: JSON.stringify({ 
+                        scan_type: scanType, 
+                        content: payloadData,
+                        context: fileContext 
+                    })
                 });
 
                 const endTime = performance.now();
