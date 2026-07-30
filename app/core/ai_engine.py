@@ -8,7 +8,7 @@ SYSTEM_PROMPT = """You are an enterprise cybersecurity analyst engine for ZeroTr
 Analyze the input payload for threats (Phishing, Social Engineering, Malicious URLs, Suspicious Urgency, Malware, Fraud).
 Respond ONLY in JSON with two keys:
 1. "risk_score": integer from 0 to 100
-2. "reasoning": 4 concise sentence describing the specific risk indicator or safety finding.
+2. "reasoning": 3 to 4 very detailed concise sentence describing the specific risk indicator or safety finding.
 """
 
 async def call_groq(content: str) -> dict:
